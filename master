@@ -1,0 +1,112 @@
+import matplotlib.pyplot as plt
+import random as rnd
+import math as mt
+import numpy as np
+# Пиксели в дюймы
+def px_to_inch(x):
+    return 0.0104166667*x
+# Функция преобразования сетки координат
+def transform(tX,tY,ta,k,xoff,yoff):
+    ta=ta*mt.pi/180
+    # Масштаб и смещение и поворот
+    if k!=1 or xoff!=0 and yoff!=0:
+        for i in range(len(tX)):
+            tX[i] = (tX[i] * k) + xoff
+            tY[i] = (tY[i] * k) + yoff
+    if ta!=0:
+        for i in range(len(tX)):
+            x = tX[i]
+            y = tY[i]
+            tX[i] = x * mt.cos(ta) + y * mt.sin(ta)
+            tY[i] = x * mt.sin(ta) - y * mt.cos(ta)
+    return tX,tY
+# Объявление класса и его методов
+class Aircraft():
+    # Этот метод запустится при объявлении нового объекта:
+    def __init__(self, x, y, v, ta):
+        self.x = x
+        self.y = y
+        self.v = v
+        self.ta = ta*mt.pi/180
+
+    def move(self, dt):
+        self.x = self.x + self.v * mt.cos(self.ta) * dt
+        self.y = self.y + self.v * mt.sin(self.ta) * dt
+
+    def turn(self, na):
+        na = na * mt.pi/180
+        self.ta = self.ta + na
+
+    def isNear(self, r_min, x2, y2):
+        result = False
+        dx = x2 - self.x
+        dy = y2 - self.y
+        r = mt.sqrt(dx * dx + dy * dy)
+        if r < r_min:
+            result = True
+        return result
+
+    def findDir(self, x2, y2):
+        dx = x2 - self.x
+        dy = y2 - self.y
+        rx = dx*mt.cos(self.ta) - dy*mt.sin(self.ta)
+        ry = dx*mt.sin(self.ta) + dy*mt.cos(self.ta)
+        return mt.atan2(ry, rx)
+
+    def plot(self, X, Y, lX, lY,fx,fy):
+        plt.scatter(X, Y, linewidth = 5)
+        plt.scatter(lX, lY, color = 'r', linewidth = 0.1)
+        plt.scatter(fx, fy, color='b',linewidth = 0.1)
+        plt.grid()
+        plt.xlabel('x')
+        plt.ylabel('y')
+        plt.text(0, 0, '      Путь следования')
+        plt.show()
+
+    # Основное тело метода
+    def goAlongPath(self, arrX, arrY):
+        arrX = list.copy(X)
+        arrY = list.copy(Y)
+        logX = [self.x]
+        logY = [self.y]
+        falseX = []
+        falseY = []
+        err = False
+        for i in range(len(arrX)):
+            treshold = 0
+            while not self.isNear(1, arrX[i], arrY[i]):
+            # Коррекция курса + случайный фактор
+                self.ta = self.findDir(arrX[i], arrY[i]) + rnd.uniform(-1, 1) * mt.pi / 180 - self.ta
+                self.move(1)
+                logX.append(self.x+rnd.gauss(0,5))
+                logY.append(self.y+rnd.gauss(0,5))
+                if rnd.randint(0,1) --1:
+                    falseX.append(self.x)
+                    falseY.append(self.y)
+                print(self.x, self.y, self.ta*180/mt.pi)
+                treshold = treshold + 1
+                if treshold > 1000:
+                    print('Failure: declared object couldn\'t reach the point ', i)
+                    err = True
+                    break
+            if err:
+                break
+            print('Reached the point', i, 'at', arrX[i], arrY[i])
+            i = i + 1
+        # Пройденный маршрут
+        self.plot(arrX, arrY, logX, logY,falseX,falseY)
+        print('Reached the final destination.')
+
+
+# Контрольные точки
+X = [520143.0, 520126.0,520123.0,520121.5,520126.2, 520120.6,520119.4,520115.4, 520116.20]
+Y = [1131706.0, 1131931.0, 1131928.3,1131914.0,1131850.0, 1131837.0,1131849.0, 1131840.0,1131831.80]
+x_offset = -X[0]
+y_offset = -Y[0]
+# Смещаем к началу координат и разворачиваем на 8 градусов по.ч.с. в соответствии со схемой
+X, Y = transform(X, Y,452 ,1 , x_offset, y_offset)
+print(X)
+print(Y)
+# Вычисления
+air1 = Aircraft(0, 0, 2, 10)
+air1.goAlongPath(X, Y)
