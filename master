@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+изменил
 import random as rnd
 import math as mt
 import numpy as np
